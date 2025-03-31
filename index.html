@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick calculator ZV</title>
+    <title>CSO Quick calculator by TungDT6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
@@ -79,21 +79,6 @@
             color: #666;
             text-align: center;
         }
-        .promotion {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #333;
-            text-align: center;
-            background: #f1f1f1;
-            padding: 15px;
-            border-radius: 12px;
-            max-width: 400px;
-        }
-        .promotion a {
-            text-decoration: none;
-            color: #007AFF;
-            font-weight: bold;
-        }
         img.logo {
             display: block;
             margin: 0 auto 20px;
@@ -129,19 +114,72 @@
             <button class="copy-btn" onclick="copyToClipboard('avgSkipRate')">Copy AVG skip rate</button>
         </div>
     </div>
-    <div class="promotion">
+     <div class="promotion">
         <h3>Other tool:</h3>
-        <p>Điền/upload list VID</p>
-        <p>Trả list VID cách nhau bằng dấu phẩy</p>
+        <p>Điền/upload list VID - Trả list VID cách nhau bằng dấu phẩy</p>
         <a href="https://dothanhtung267.github.io/vidlist/" target="_blank">Try it now →</a>
     </div>
-    <div class="footer">by TungDT6 - CSO team</div>
+    <div class="footer">by TungDT6</div>
+
     <script>
         function copyToClipboard(id) {
             const text = document.getElementById(id).innerText;
             navigator.clipboard.writeText(text);
             alert('Copied: ' + text);
         }
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                if (jsonData.length < 2) {
+                    alert('Invalid Excel file');
+                    return;
+                }
+                
+                const headers = jsonData[0];
+                const indexA = headers.indexOf("Stats/Tổng số view");
+                const indexB = headers.indexOf("Stats/Tổng số watchtime");
+                const indexC = headers.indexOf("Stats/Tỷ lệ skip");
+                
+                if (indexA === -1 || indexB === -1 || indexC === -1) {
+                    alert('Required columns not found');
+                    return;
+                }
+                
+                let totalViews = 0;
+                let totalWatchtime = 0;
+                let totalX = 0;
+
+                for (let i = 1; i < jsonData.length; i++) {
+                    let row = jsonData[i];
+                    let A = Number(row[indexA]) || 0;
+                    let B = Number(row[indexB]) || 0;
+                    let C = Number(row[indexC]) || 0;
+                    
+                    totalViews += A;
+                    totalWatchtime += B;
+                    totalX += A * C;
+                }
+
+                let avgSkipRate = totalViews > 0 ? totalX / totalViews : 0;
+                let totalWatchtimeMinutes = (totalWatchtime / 60000).toFixed(2);
+
+                document.getElementById('totalViews').innerText = totalViews.toLocaleString();
+                document.getElementById('totalWatchtime').innerText = Number(totalWatchtimeMinutes).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('avgSkipRate').innerText = avgSkipRate.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        
     </script>
 </body>
 </html>
