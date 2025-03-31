@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Stats Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            flex-direction: column;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            position: relative;
+        }
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .custom-file-input {
+            display: none;
+        }
+        .custom-file-label {
+            display: inline-block;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #007AFF, #0051FF);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 250px;
+        }
+        .custom-file-label:hover {
+            background: linear-gradient(135deg, #0051FF, #007AFF);
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .copy-buttons {
+            margin-top: 10px;
+        }
+        .copy-btn {
+            background: linear-gradient(135deg, #007AFF, #0051FF);
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 5px;
+        }
+        .footer {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        img.logo {
+            display: block;
+            margin: 0 auto 20px;
+            width: 100%;
+            max-width: 250px;
+            height: auto;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://zchannel-photo.zadn.vn/image/203624bd74f99da7c4e8.jpg" alt="Logo" class="logo">
+        <h2>Upload raw data, nhận ngay kết quả</h2>
+        <label for="fileInput" class="custom-file-label">Choose File</label>
+        <input type="file" id="fileInput" class="custom-file-input" accept=".xlsx, .xls">
+        <h3>Results:</h3>
+        <table>
+            <tr>
+                <th>Tổng view</th>
+                <th>Tổng watchtime (minutes)</th>
+                <th>AVG skip rate</th>
+            </tr>
+            <tr>
+                <td><span id="totalViews">0</span></td>
+                <td><span id="totalWatchtime">0</span></td>
+                <td><span id="avgSkipRate">0</span></td>
+            </tr>
+        </table>
+        <div class="copy-buttons">
+            <button class="copy-btn" onclick="copyToClipboard('totalViews')">Copy Tổng view</button>
+            <button class="copy-btn" onclick="copyToClipboard('totalWatchtime')">Copy Tổng watchtime</button>
+            <button class="copy-btn" onclick="copyToClipboard('avgSkipRate')">Copy AVG skip rate</button>
+        </div>
+    </div>
+    <div class="footer">by TungDT6</div>
+
+    <script>
+        function copyToClipboard(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text);
+            alert('Copied: ' + text);
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                if (jsonData.length < 2) {
+                    alert('Invalid Excel file');
+                    return;
+                }
+                
+                const headers = jsonData[0];
+                const indexA = headers.indexOf("Stats/Tổng số view");
+                const indexB = headers.indexOf("Stats/Tổng số watchtime");
+                const indexC = headers.indexOf("Stats/Tỷ lệ skip");
+                
+                if (indexA === -1 || indexB === -1 || indexC === -1) {
+                    alert('Required columns not found');
+                    return;
+                }
+                
+                let totalViews = 0;
+                let totalWatchtime = 0;
+                let totalX = 0;
+
+                for (let i = 1; i < jsonData.length; i++) {
+                    let row = jsonData[i];
+                    let A = Number(row[indexA]) || 0;
+                    let B = Number(row[indexB]) || 0;
+                    let C = Number(row[indexC]) || 0;
+                    
+                    totalViews += A;
+                    totalWatchtime += B;
+                    totalX += A * C;
+                }
+
+                let avgSkipRate = totalViews > 0 ? totalX / totalViews : 0;
+                let totalWatchtimeMinutes = (totalWatchtime / 60000).toFixed(2);
+
+                document.getElementById('totalViews').innerText = totalViews.toLocaleString();
+                document.getElementById('totalWatchtime').innerText = Number(totalWatchtimeMinutes).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('avgSkipRate').innerText = avgSkipRate.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
