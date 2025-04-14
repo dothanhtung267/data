@@ -23,7 +23,7 @@
             padding: 30px;
             border-radius: 20px;
             box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
+            max-width: 500px;
             width: 100%;
             position: relative;
         }
@@ -109,12 +109,14 @@
         <h3>Results:</h3>
         <table>
             <tr>
+                <th>Số lượng video</th>
                 <th>Tổng view</th>
                 <th>Tổng watchtime (minutes)</th>
                 <th>AVG skip rate</th>
                 <th>Total engagement</th>
             </tr>
             <tr>
+                <td><span id="videoCount">0</span></td>
                 <td><span id="totalViews">0</span></td>
                 <td><span id="totalWatchtime">0</span></td>
                 <td><span id="avgSkipRate">0</span></td>
@@ -122,6 +124,7 @@
             </tr>
         </table>
         <div class="copy-buttons">
+            <button class="copy-btn" onclick="copyToClipboard('videoCount')">Copy Số lượng video</button>
             <button class="copy-btn" onclick="copyToClipboard('totalViews')">Copy Tổng view</button>
             <button class="copy-btn" onclick="copyToClipboard('totalWatchtime')">Copy Tổng watchtime</button>
             <button class="copy-btn" onclick="copyToClipboard('avgSkipRate')">Copy AVG skip rate</button>
@@ -165,8 +168,9 @@
                 const indexL = headers.indexOf("Stats/Tổng số like");
                 const indexS = headers.indexOf("Stats/Tổng số share");
                 const indexM = headers.indexOf("Stats/Tổng số comment");
-                
-                if (indexA === -1 || indexB === -1 || indexC === -1 || indexL === -1 || indexS === -1 || indexM === -1) {
+                const indexVID = headers.indexOf("Video ID");
+
+                if (indexA === -1 || indexB === -1 || indexC === -1 || indexL === -1 || indexS === -1 || indexM === -1 || indexVID === -1) {
                     alert('Required columns not found');
                     return;
                 }
@@ -175,6 +179,7 @@
                 let totalWatchtime = 0;
                 let totalX = 0;
                 let totalEVE = 0;
+                let videoSet = new Set();
 
                 for (let i = 1; i < jsonData.length; i++) {
                     let row = jsonData[i];
@@ -184,6 +189,9 @@
                     let L = Number(row[indexL]) || 0;
                     let S = Number(row[indexS]) || 0;
                     let M = Number(row[indexM]) || 0;
+                    let videoID = row[indexVID];
+
+                    if (videoID) videoSet.add(videoID);
                     
                     totalViews += A;
                     totalWatchtime += B;
@@ -192,6 +200,7 @@
                 }
 
                 let avgSkipRate = totalViews > 0 ? totalX / totalViews : 0;
+                document.getElementById('videoCount').innerText = videoSet.size;
                 document.getElementById('totalViews').innerText = totalViews.toLocaleString();
                 document.getElementById('totalWatchtime').innerText = (totalWatchtime / 60000).toFixed(2);
                 document.getElementById('avgSkipRate').innerText = avgSkipRate.toFixed(4);
